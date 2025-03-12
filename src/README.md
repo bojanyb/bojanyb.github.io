@@ -5,7 +5,7 @@ layout: BlogHome
 title: 🏠️ 博客主页
 heroText: In Time
 tagline: 0057.02.1.23.59.59
-bgImage: https://cdn.jsdelivr.net/gh/simeis147/simeis147.github.io@main/src/.vuepress/public/assets/bgImage/iTab-1k6ljv.webp
+bgImage: /assets/bgImage/iTab-1k6ljv.webp
 heroFullScreen: true
 
 projects:
