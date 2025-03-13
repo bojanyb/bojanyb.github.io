@@ -42,12 +42,9 @@ titles:
 
 ## Education
 
-<div style="display: flex; justify-content: space-between; width: 910px">
+<div style="display: flex; justify-content: space-between;">
     <div style="text-align: left;">
         - B.S. in Computer Science and Technology, Xiangtan University
-    </div>
-    <div style="text-align: right;">
-        2015-2019
     </div>
 </div>
 

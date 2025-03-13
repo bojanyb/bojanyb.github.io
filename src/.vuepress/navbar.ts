@@ -31,6 +31,7 @@ export default navbar([
         children: [
           { text: '计算机网络', icon: '/assets/icon/network.svg', link: '/ComputerBasics/ComputerNetwork/' },
           { text: '操作系统', icon: '/assets/icon/os.svg', link: '/ComputerBasics/OpreatingSystem/' },
+          { text: '编程核心', icon: '/assets/icon/code.svg', link: '/ComputerBasics/CodeCore/' },
         ],
       },
       {

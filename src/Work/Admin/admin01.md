@@ -1,129 +1,126 @@
 ---
 order: 1
-date: 2023-03-10
+date: 2024-03-10
 category:
-  - Admin
+  - 管理后台
 ---
 
-# 基础语法
+# 权限设计
 
-<!-- more -->
+#### **1. 权限模型设计**
 
-## 书写语法
+采用 **`RBAC`（基于角色的访问控制）** 模型，结合 **功能权限** 和 **数据权限** 设计，确保灵活性和安全性。
 
-| api              | 描述             |
-| ---------------- | ---------------- |
-| window.alert()   | 警告框           |
-| document.write() | 在 HTML 输出内容 |
-| console.log()    | 写入浏览器控制台 |
+#### **2. 核心模块功能**
 
-## 变量
+|     模块     |                            功能描述                            |
+| :----------: | :------------------------------------------------------------: |
+| **菜单管理** |      动态配置后台菜单可见性（按角色控制）和菜单层级结构。      |
+| **用户管理** |     管理用户账号、分配角色、关联部门，支持批量导入/导出。      |
+| **部门管理** | 定义组织架构树（父子部门）、设置部门负责人，用于数据权限隔离。 |
+| **角色管理** |   定义角色（管理员/查看者/编辑者），绑定功能权限和数据权限。   |
 
-| 关键字                        | 解释                                                                       |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| var                           | 早期 ECMAScript5 中用于变量声明的关键字                                    |
-| let                           | ECMAScript6 中新增的用于变量声明的关键字，相比较 var，let 只在代码块内生效 |
-| const&nbsp;&nbsp;&nbsp;&nbsp; | 声明常量的，常量一旦声明，不能修改                                         |
+#### **3. 角色权限划分**
 
-- JavaScript 是一门弱类型语言，变量可以存放不同类型的值 。
+|    角色    |                                                     权限范围                                                     |
+| :--------: | :--------------------------------------------------------------------------------------------------------------: |
+| **管理员** |                    - 所有模块的完全控制权（增删改查） - 可分配角色、管理部门、配置全局菜单。                     |
+| **编辑者** | - 用户管理：仅编辑本部门用户（不可删除/分配角色） - 菜单管理：不可操作 - 部门管理：仅查看 - 角色管理：不可操作。 |
+| **查看者** |                        - 所有模块仅查看权限（不可增删改） - 菜单仅展示已授权的可见页面。                         |
 
-## 数据类型和运算符
+#### **4. 功能权限设计**
 
-虽然 js 是弱数据类型的语言，但是 js 中也存在数据类型  
-js 中的数据类型分为 ：**原始类型** 和 **引用类型**
+##### **4.1 功能权限标识**
 
-| 数据类型  | 描述                                               |
-| --------- | -------------------------------------------------- |
-| number    | 数字（整数、小数、NaN(Not a Number)）              |
-| string    | 字符串，单双引皆可                                 |
-| boolean   | 布尔。true，false                                  |
-| null      | 对象为空                                           |
-| undefined | 当声明的变量未初始化时，该变量的默认值是 undefined |
+为每个操作定义唯一权限码（如 `user:add`, `menu:edit`），角色绑定权限码集合。
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JS-数据类型</title>
-  </head>
-  <body></body>
-  <script>
-    //原始数据类型
-    alert(typeof 3); //number
-    alert(typeof 3.14); //number
+|   模块   |                     权限码示例                      |        说明        |
+| :------: | :-------------------------------------------------: | :----------------: |
+| 用户管理 | [{`authCode`:`user:add`} `{authCode: user:delete`}] | 新增、删除用户权限 |
+| 部门管理 | [{`authCode`:`dept:view`} `{authCode: dept:edit`}]  |   查看或编辑部门   |
+| 菜单管理 |            [{`authCode`:`menu:config `}]            |   配置菜单可见性   |
+| 角色管理 |            [{`authCode`: `role:assign`}]            |    分配角色权限    |
 
-    alert(typeof 'A'); //string
-    alert(typeof 'Hello'); //string
+##### **4.2 权限分配示例**
 
-    alert(typeof true); //boolean
-    alert(typeof false); //boolean
+|  角色  |               权限码集合                |
+| :----: | :-------------------------------------: |
+| 管理员 |          `all`（表示所有权限）          |
+| 编辑者 | [`user:edit`, `dept:view`, `menu:view`] |
+| 查看者 | [`user:view`, `dept:view`, `menu:view`] |
 
-    alert(typeof null); //object
+#### **5. 数据权限设计**
 
-    var a;
-    alert(typeof a); //undefined
-  </script>
-</html>
+基于 **部门树** 控制数据可见性：
+
+- **用户管理**：编辑者仅能管理本部门用户，管理员可跨部门操作。
+- **部门数据隔离**：用户仅能查看本部门及子部门数据（需支持递归查询）。
+
+#### **6. 菜单动态渲染**
+
+1. **菜单可见性**：根据角色权限码动态过滤菜单（如 `menu:view` 权限可访问菜单）。
+2. **菜单层级**：支持多级嵌套（父子菜单），通过部门或角色绑定可见范围。
+
+#### **7. 关键流程设计**
+
+##### **7.1 用户登录流程**
+
+```mermaid
+sequenceDiagram
+  User->>Auth: 提交账号密码
+  Auth->>DB: 验证用户信息
+  DB-->>Auth: 返回用户角色/部门
+  Auth->>User: 生成Token（携带角色/部门）
+  User->>Backend: 携带Token请求菜单
+  Backend->>User: 返回动态菜单（按角色过滤）
 ```
 
-**JavaScript 和 Java 不一致的地方**
+##### **7.2 权限校验流程**
 
-- \==：只比较值是否相等，不区分数据类型，哪怕类型不一致，也会自动转换类型进行值得比较
-- ===：不光比较值，还要比较类型，如果类型不一致，直接返回 false
-
-**0 , null , undefined , "" , NaN 理解成 false,反之理解成 true**。
-
-```js
-if (0) {
-  //false
-  alert('0 转换为false');
-}
+```mermaid
+flowchart TD
+  A[请求接口] --> B{是否携带Token?}
+  B -->|是| C[解析Token获取角色/部门]
+  B -->|否| D[返回401未授权]
+  C --> E{是否拥有权限码?}
+  E -->|是| F[执行数据权限过滤]
+  E -->|否| G[返回403禁止访问]
+  F --> H[返回结果]
 ```
 
-## 函数
+#### **8. 数据库表设计**
 
-通过关键字 function 来定义。
+```sql
+-- 用户表
+CREATE TABLE user (
+  id INT PRIMARY KEY,
+  name VARCHAR(50),
+  dept_id INT,        -- 关联部门
+  role_id INT         -- 关联角色
+);
 
-### 第一种定义格式
+-- 部门表
+CREATE TABLE dept (
+  id INT PRIMARY KEY,
+  name VARCHAR(50),
+  parent_id INT       -- 父部门ID
+);
 
-```js
-function 函数名(参数1,参数2..){
-    要执行的代码
-}
+-- 角色表
+CREATE TABLE role (
+  id INT PRIMARY KEY,
+  name VARCHAR(20),   -- 角色名称（管理员/编辑者/查看者）
+  permissions JSON    -- 权限码集合（如 ["user:add", "dept:edit"]）
+);
+
+-- 菜单表
+CREATE TABLE menu (
+  id INT PRIMARY KEY,
+  name VARCHAR(50),
+  path VARCHAR(100),  -- 路由路径
+  parent_id INT,      -- 父菜单ID
+  required_permission VARCHAR(50) -- 所需权限码（如 "menu:view"）
+);
 ```
 
-```js
-function add(a, b) {
-  return a + b;
-}
-```
-
-### 第二种定义格式
-
-```js
-var functionName = function (参数1,参数2..){
-    //要执行的代码
-}
-```
-
-```html
-<script>
-  //定义函数-1
-  // function add(a,b){
-  //    return  a + b;
-  // }
-
-  //定义函数-2
-  var add = function (a, b) {
-    return a + b;
-  };
-
-  var result = add(10, 20);
-  alert(result);
-</script>
-```
-
-在 JavaScript 中，**函数的调用只需要名称正确即可，参数列表不管的。**
+此方案兼顾灵活性与安全性，通过 **`RBAC` + 部门隔离** 实现精细化权限管理，适用于中小型企业管理后台场景。
